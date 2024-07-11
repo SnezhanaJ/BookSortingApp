@@ -1,0 +1,184 @@
+﻿@model IEnumerable<BookStore.Domain.Domain.Models.Book>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    /* BEM styling for book items */
+
+    .book__item {
+        margin-bottom: 1.5rem;
+    }
+
+    .book__card {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .book__image {
+        width: 100%;
+        height: auto;
+    }
+
+    .book__body {
+        padding: 1rem;
+    }
+
+    .book__title {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .book__description {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .book__price,
+    .book__publisher,
+    .book__author,
+    .book__genre {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+
+        .book__publisher strong,
+        .book__author strong,
+        .book__genre strong,
+        .book__price strong {
+            font-weight: bold;
+        }
+
+</style>
+
+<div class="col mb-3">
+    <a class="btn btn-primary" asp-action="ImportBooksIndex">Import books</a>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12 col-md-4 mb-2 mb-md-0">
+        <a class="btn btn-primary w-100" asp-action="Create">Create New</a>
+    </div>
+    <div class="col-12 col-md-4 mb-2 mb-md-0">
+        <div class="input-group">
+            <input type="text" id="searchQuery" class="form-control" placeholder="Search for books..." onkeyup="filterBooks()">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" onclick="filterBooks()">Search</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <select id="sortOptions" class="form-control" onchange="sortBooks()">
+            <option value="author">Sort by Author</option>
+            <option value="title">Sort by Title</option>
+            <option value="genre">Sort by Genre</option>
+        </select>
+    </div>
+</div>
+
+<div class="row" id="bookContainer">
+    @foreach (var item in Model)
+    {
+        <div class="col-12 col-md-6 col-lg-4 book__item">
+            <div class="book__card">
+                <img class="book__image" src="@item.BookImage" alt="@item.Title" />
+                <div class="book__body">
+                    <h5 class="book__title">@item.Title</h5>
+                    <p class="book__description">@item.Description</p>
+                    <p class="book__price"><strong>Price:</strong> @item.Price</p>
+                    <p class="book__publisher"><strong>Publisher:</strong> @item.Publisher.Name</p>
+                    <p class="book__author"><strong>Author:</strong> @item.Author.FirstName @item.Author.LastName</p>
+                    <p class="book__genre"><strong>Genre:</strong> @item.Genre.Name</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@item.Id">Details</a>
+                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="row" id="noResults" style="display:none;">
+    <div class="col">
+        <p class="text-center">No results found</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function highlightMatch(text, query) {
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span style="color: red; font-weight: bold;">$1</span>');
+        }
+
+        function filterBooks() {
+            const query = document.getElementById('searchQuery').value.toLowerCase();
+            const books = document.querySelectorAll('.book__item');
+            const noResults = document.getElementById('noResults');
+            let bookExists = false;
+
+            books.forEach(book => {
+                const titleElement = book.querySelector('.book__title');
+                const authorElement = book.querySelector('.book__author');
+                const genreElement = book.querySelector('.book__genre');
+                const publisherElement = book.querySelector('.book__publisher');
+
+                const title = titleElement.innerText.toLowerCase();
+                const author = authorElement.innerText.toLowerCase();
+                const genre = genreElement.innerText.toLowerCase();
+                const publisher = publisherElement.innerText.toLowerCase();
+
+                if (title.includes(query) || publisher.includes(query) || author.includes(query) || genre.includes(query)) {
+                    titleElement.innerHTML = highlightMatch(titleElement.innerText, query);
+                    authorElement.innerHTML = highlightMatch(authorElement.innerText, query);
+                    genreElement.innerHTML = highlightMatch(genreElement.innerText, query);
+                    publisherElement.innerHTML = highlightMatch(publisherElement.innerText, query);
+                    book.style.display = 'block';
+                    bookExists = true;
+                } else {
+                    book.style.display = 'none';
+                }
+            });
+
+            if (!bookExists) {
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
+            }
+        }
+
+        function sortBooks() {
+            const sortOption = document.getElementById('sortOptions').value;
+            const bookContainer = document.getElementById('bookContainer');
+            const books = Array.from(document.querySelectorAll('.book__item'));
+
+            books.sort((a, b) => {
+                let aText, bText;
+                if (sortOption === 'title') {
+                    aText = a.querySelector('.book__title').innerText.toLowerCase();
+                    bText = b.querySelector('.book__title').innerText.toLowerCase();
+                } else if (sortOption === 'author') {
+                    aText = a.querySelector('.book__author').innerText.toLowerCase();
+                    bText = b.querySelector('.book__author').innerText.toLowerCase();
+                } else if (sortOption === 'genre') {
+                    aText = a.querySelector('.book__genre').innerText.toLowerCase();
+                    bText = b.querySelector('.book__genre').innerText.toLowerCase();
+                }
+                return aText.localeCompare(bText);
+            });
+
+            books.forEach(book => bookContainer.appendChild(book));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            sortBooks(); 
+        });
+    </script>
+}
